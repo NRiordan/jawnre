@@ -51,7 +51,8 @@ def predict():
     data = str(data)
 
     if len(data) == 0:
-        pred = "you didn't enter anything, brush yourself off and try again"
+        pred = "you didn't enter anything"
+        suggestion = "brush yourself off and try again"
     else:
         # make prediction based on new data
         top_genre = pred_genre(data)
