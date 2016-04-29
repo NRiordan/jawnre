@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, url_for, request, render_template
 import random
 import requests
 import pickle
@@ -23,6 +23,7 @@ lookups = pickle.load(open('lookups.pkl', 'r'))
 top5k = lookups[0]
 top5k_dict = lookups[1]
 rev_map_dict = lookups[2]
+key_words_dict = lookups[3]
 
 snowball = SnowballStemmer('english')
 
@@ -30,19 +31,18 @@ snowball = SnowballStemmer('english')
 
 # Homepage with form on it.
 #================================================
-@app.route('/')
+@app.route('/', methods=['get', 'POST'])
+@app.route('/index', methods=['get','POST'])
 def index():
-    return '''
-    <form action="/predict" method='POST' >
-        <input type="text" name="user_input" />
-        <input type="submit" />
-    </form>
-    '''
+    pred = "created by neal riordan"
+    suggestion = "for galvanize"
+    last = " "
+    return render_template('index.html', pred=pred, suggestion=suggestion, last=last)
 
 # Once submit is hit, pass info into model, return results.
 #================================================
-@app.route('/predict', methods=['POST'])
-def predcit():
+@app.route('/predict', methods=['get','POST'])
+def predict():
 
     # get data from request form
     data = request.form['user_input']
@@ -50,17 +50,39 @@ def predcit():
     # convert data from unicode to string
     data = str(data)
 
-    # make prediction based on new data
-    pred = pred_genre(data)
+    if len(data) == 0:
+        pred = "you didn't enter anything, brush yourself off and try again"
+    else:
+        # make prediction based on new data
+        top_genre = pred_genre(data)
+        pred = 'Sounds like some sweet sweet {} to me!'.format(top_genre)
+
+        new_genre, replacement = make_suggestion(top_genre, data)
+        suggestion = 'Want to make it a little more {}? Try adding "{}"'.format(new_genre, replacement)
 
     # return a string format of that prediction to the html page
-    return pred
+    return render_template('index.html', pred=pred, suggestion=suggestion, last=data)
 
+
+def make_suggestion(genre, string):
+    string = tokenize(string.strip(punctuation))
+    all_genres = list(m.classes_)
+
+    all_genres.remove(genre)
+    new_genre = np.random.choice(all_genres)
+
+    word_options = key_words_dict[new_genre]
+    replacement = np.random.choice(word_options)
+
+    return new_genre, replacement
 
 def transform_text(string, cutoff=100):
     # transform input text so that it matches top 5000 vector format
     string = string.replace("\xe2\x80\x99","'")
     string = string.replace("\xe2\x80\xa6","...")
+    string = string.replace("\u2018","")
+    string = string.replace("\u2019","")
+
     string = tokenize(string.strip(punctuation))
 
     # create empty array to hold counts of each of top 5k words
@@ -85,10 +107,7 @@ def pred_genre(string):
     # using predicted class order generates class/genre name as string
     top_genre = m.classes_[prob_list][0][::-1][0]
 
-    # placeholder string for response to user
-    answer = 'Sounds like some sweet sweet {} to me!'.format(top_genre)
-
-    return answer
+    return top_genre
 
 
 def tokenize(doc):

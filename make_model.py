@@ -10,7 +10,7 @@ from string import punctuation
 import pickle
 
 
-def load_genres(filename='msd_tagtraum_cd2_fix.txt'):
+def load_genres(filename='../jawnre_extra/msd_tagtraum_cd2_fix.txt'):
     # load all trackIDs with genre labels into dataframe and return it
     # NOTE: open file once beforehand in excel or similar for columns to properly register
     col_names = ['trackID', 'Majority', 'Minority', 'Extra1', 'Extra2']
@@ -24,11 +24,11 @@ def load_misc_files():
     # open list of top 5000 stemmed words and store as list
     # LIST IS ZERO INDEXED!
     # BoW IS ONE INDEXED!
-    with open('top5000.txt') as f:
+    with open('../jawnre_extra/top5000.txt') as f:
         top5k_list = f.read().split(',')
 
     # open reverse mapping file (stemmed --> unstemmed) and create lookup dict
-    with open('mxm_reverse_mapping.txt') as f:
+    with open('../jawnre_extra/mxm_reverse_mapping.txt') as f:
         reverse_map_lines = f.readlines()
 
     rev_map_dict = {}
@@ -37,11 +37,11 @@ def load_misc_files():
         rev_map_dict[line[0]] = line[1].rstrip()
 
     # open test list of songs and store as list of lines
-    with open('mxm_dataset_test.txt') as f:
+    with open('../jawnre_extra/mxm_dataset_test.txt') as f:
         Ltest = f.readlines()
 
     # open train list of songs and store as list of lines
-    with open('mxm_dataset_train.txt') as f:
+    with open('../jawnre_extra/mxm_dataset_train.txt') as f:
         Ltrain = f.readlines()
 
     # convert list to lookup dict for input text
@@ -112,7 +112,9 @@ def match_BoW_to_genre(mapping, genres, cutoff=50, to_exclude=['Latin', 'World',
     return ordered_vects, ordered_genres
 
 
-def calc_unique_words(genre_num):
+def calc_key_words(genre_num):
+    list_of_key_words = []
+    genre_name = m.classes_[genre_num]
     total = np.zeros(5001)
 
     for index, f_count in enumerate(m.feature_count_):
@@ -128,9 +130,6 @@ def calc_unique_words(genre_num):
     feat_above_mean = (m.feature_count_[genre_num]/m.class_count_[genre_num]) / (total_norm + .00005)
     feat_above_mean = np.nan_to_num(feat_above_mean)
 
-    print m.classes_[genre_num]
-    print '************'
-
     top_words_this_genre = np.argsort(feat_above_mean)[::-1]
 
     counter = 0
@@ -141,16 +140,30 @@ def calc_unique_words(genre_num):
 
         if mean_freq_elsewhere > .001 and real_word not in blacklist and counter <= 25:
             counter += 1
-            print real_word, "\t\t", times_above_mean, "\t", mean_freq_elsewhere
+            list_of_key_words.append(real_word)
+
+    return genre_name, list_of_key_words
 
 
-blacklist = ['od', 'za', 'worte', 'tod', 'lai', 'eg', 'toma', 'tener', 'quién', 'kalt', 'nana', 'gott', 'herz',  \
-           'blut', 'licht', 'nein', 'seele', 'i´m', 'it´s', 'weißt', 'tief' , 'tá', 'när', 'fuori', 'occhi'    \
-            'guarda', 'sotto', 'Â', 'alleluia!', 'ref:', 'meg', 'jeg', 'don`t', 're', 'dot', 'saa', 'nacht', '(x4)'  \
-           '(x3)', 'himmel', 'gesicht', 'traum', 'don´t', 'niemand', 'mina', 'note', 'niet', 'ik', 'allt'  \
-            'senza', 'ven', 'ke', 'yi', 'junto', 'hermano', 'digo']
+blacklist = ['od', 'za', 'worte', 'tod', 'lai', 'eg', 'toma', 'tener', 'quién', 'kalt', 'nana', 'gott', 'herz', \
+            'blut', 'licht', 'nein', 'seele', 'i´m', 'it´s', 'weißt', 'tief' , 'tá', 'när', 'fuori', 'occhi' ,\
+            'guarda', 'sotto', 'Â', 'alleluia!', 'ref:', 'meg', 'jeg', 'don`t', 're', 'dot', 'saa', 'nacht', "(x4)", \
+            '(x3)', 'himmel', 'gesicht', 'traum', 'don´t', 'niemand', 'mina', 'note', 'niet', 'ik', 'allt' ,\
+            'senza', 'ven', 'ke', 'yi', 'junto', 'hermano', 'digo', 'pum', 'leve', 'ann', 'sä', 'dort' ,\
+            'meinem', 'vem', "qu'", 'yer', 'ar', 'bara', 'inte', 'notte', 'finns', "i’ve", 'lei', 'här', \
+            'att', 'suo', 'ora', 'gli', 'då', 'aldrig', 'delle', 'får', 'dal', 'för', 'giorno', 'och' ,\
+            'cunt', 'asshole', 'carol', 'niggaz', "motherfuckin'", 'hoes', 'bitch', 'shit', 'motherfucker', \
+            'ikke', '50', 'p', "t'as", 'ass', 'contra', 'pueblo', 'bam', 'dong', 'gi', 'di', 'mi', 'fi', 'fe',\
+            'poder', 'mujer', 'queda', 'nena', 'dale', 'nombre', 'vos', 'muy', 'einmal', 'tierra', "l'on", \
+            'esa', 'piel', 'cuerpo', 'nuestro', 'mentira', 'libre', 'fuego', 'ka', 'u', 'dah', 'christmas', \
+            'claus', 'ba', 'ow', 'merry', 'bop', 'll']
 
-
+def create_important_dict():
+    impt_dict = {}
+    for genre_num in range(len(m.classes_)):
+        genre_name, top_words = calc_key_words(genre_num)
+        impt_dict[genre_name] = top_words
+    return impt_dict
 
 
 
@@ -170,8 +183,10 @@ if __name__ == '__main__':
     # create and fit model for full dataset
     m = build_model(X_full, y_full)
 
+    key_words_dict = create_important_dict()
+
     with open('model.pkl', 'w') as f:
         pickle.dump(m, f)
 
     with open('lookups.pkl', 'w') as f:
-        pickle.dump([top5k, top5k_dict, rev_map_dict], f)
+        pickle.dump([top5k, top5k_dict, rev_map_dict, key_words_dict], f)
