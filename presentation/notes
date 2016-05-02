@@ -1,0 +1,42 @@
+MNB with uniform priors
+Accuracy: 0.509041415516
+Recall:  0.509041415516
+Precison:  0.514465238777
+
+RF w/ 200 forests
+Accuracy: 0.558040054443
+Recall:  0.558040054443
+Precison:  0.532324985486
+
+
+MLK	1963	0.115978370144	3	0.110270890922	6	Punk, Folk	I have a dream
+
+LOOK AT SUGGESTIONS DOC FOR PRESENTATIONS
+1) intro
+- name,
+music background
+nature of problem
+business app
+
+
+2) demonstration
+
+3) Pipeline
+MSD
+BoW
+Genre labels
+MNB (uniform priors)
+
+Label cleaning
+50% accuracy
+
+blacklist
+
+top 25 words
+
+4) Wordcloud for Country
+
+5) Most Metal President
+5b) Metalness and HipHopness over time in presidents 
+
+6) Genre heatmap
